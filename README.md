@@ -1,3 +1,863 @@
+
+Here you go — first the merged, production-ready README.md (with Pro Features baked in), then a step-by-step migration / deployment checklist your programming team can follow like a playbook.
+
+
+---
+
+# 💍 MY JAEBELLE WEDDING WEBSITE
+
+A modern, elegant wedding website for **Morgan JEA (Echols)** & **Shawn Keller**, featuring:
+
+- A **public, guest-facing site** (Vite + React, Netlify, Netlify Forms)
+- A **secure admin panel** (Next.js + NextAuth magic links + Supabase)
+- **Pro Features** like Supabase Storage photo uploads, drag-and-drop ordering, RSVP analytics, CI/CD, and local Supabase development
+
+---
+
+## 🌸 High-Level Overview
+
+This project is split into two apps:
+
+1. **Public Wedding Website (Vite + React)**  
+   - Deployed to: `https://shawn-morgan-wedding.netlify.app`  
+   - Shows:
+     - Hero section with couple & wedding date
+     - “The Big Day” details and story
+     - Schedule / timeline of events
+     - Wedding party
+     - Registry links
+     - Photo gallery
+     - RSVP form powered by **Netlify Forms**
+
+2. **Admin Panel (Next.js + Supabase + NextAuth)**  
+   - Recommended deployment: `https://admin.shawn-morgan-wedding.netlify.app`  
+   - Restricted to authorized users via **magic link login**
+   - Allows editing:
+     - Wedding details (names, date, venue, story, hero image)
+     - Events / timeline
+     - Wedding party members
+     - Registry links
+     - Gallery photos (including uploads & ordering)
+   - All data is stored in **Supabase PostgreSQL**
+
+---
+
+## 🏗 Architecture
+
+```text
+Public Site (Vite + React, Netlify)
+  ├─ Static pages + Tailwind styling
+  ├─ Netlify Forms for RSVP (HTML form → Netlify backend)
+  └─ Optional reads from Supabase (public read-only)
+
+Admin Panel (Next.js, App Router, Netlify)
+  ├─ NextAuth (magic link sign-in via Resend)
+  ├─ Server-side Supabase client (Service Role)
+  ├─ Admin UI (React Hook Form + DnD sorting)
+  ├─ CRUD API routes (wedding, events, party, registry, photos)
+  └─ RSVP Analytics (via Netlify API, reading Netlify Forms data)
+
+Supabase
+  ├─ PostgreSQL tables:
+  │  - weddings
+  │  - events
+  │  - party_members
+  │  - registry_links
+  │  - photos
+  │  - guests (optional future)
+  │  - rsvps (optional future)
+  ├─ Row-Level Security (RLS) with public read-only
+  └─ Storage bucket: wedding-photos (for gallery images)
+
+
+---
+
+✨ Core Features
+
+Public Site (Vite + React)
+
+Hero Section
+
+Couple names: Morgan JEA (Echols) & Shawn Keller
+
+Wedding date: November 14, 2026
+
+Location: Atlanta, GA
+
+CTA button linking to #rsvp
+
+
+The Big Day + Our Story
+
+Human-friendly formatted date & time
+
+Venue name & address
+
+“Our Story” copy with supporting photo
+
+
+Schedule / Timeline
+
+Events like Rehearsal Dinner, Ceremony, Reception, After Party
+
+Day, time, and order presented clearly
+
+
+Wedding Party
+
+Bridesmaids, groomsmen, maid of honor, best man
+
+Headshots and roles for each member
+
+
+Registry
+
+Link cards for Amazon, Target, Crate & Barrel, etc.
+
+
+Gallery
+
+Masonry-style grid of engagement / couple photos
+
+Alt text for accessibility
+
+
+RSVP Form (Netlify Forms)
+
+Fields: Name, Attending (yes/no), Meal choice, Notes
+
+Submissions:
+
+Stored in Netlify Forms
+
+Accessible via Netlify dashboard and API
+
+Used by Admin RSVP analytics
+
+
+
+
+
+---
+
+🚀 Admin Panel Features
+
+Magic Link Login
+
+Handled by NextAuth (Auth.js) with Email provider
+
+Emails sent using Resend
+
+Only authorized emails can access /admin
+
+
+Wedding Editor
+
+Edit couple names, date/time, city, state
+
+Edit venue name & address
+
+Edit hero image URL
+
+Edit story (HTML or text)
+
+
+Events Editor
+
+Add / edit / delete events
+
+Fields: title, starts_at, ends_at, location, order
+
+Drag-and-drop reordering (DnD) with automatic order updates
+
+
+Wedding Party Editor
+
+Add / edit / delete party members
+
+Fields: role, name, image_url, bio, order
+
+Drag-and-drop reordering
+
+
+Registry Editor
+
+Add / edit / delete registry links
+
+Fields: label, url
+
+
+Photo Gallery Editor
+
+Upload new photos to Supabase Storage
+
+Fields: image_url, alt, order
+
+Drag-and-drop reordering
+
+Inline thumbnail preview
+
+
+RSVP Analytics Dashboard
+
+Reads from Netlify Forms API
+
+Shows:
+
+Total RSVP count
+
+Yes / No counts
+
+Meal breakdown
+
+Latest submission list (name, attending, meal, notes)
+
+
+
+Admin API Routes
+
+All CRUD endpoints live under /api/admin/*
+
+Protected using getServerSession(authOptions)
+
+Use Supabase Service Role key server-side only
+
+
+
+
+---
+
+🏅 Enterprise “Pro Features”
+
+These are the advanced pieces that turn this from a simple site into a robust, maintainable wedding platform:
+
+1. Supabase Storage Photo Upload Flow
+
+Bucket: wedding-photos
+
+Admin can upload files via /api/admin/photos/upload
+
+Backend:
+
+Receives multipart form data
+
+Stores file in wedding-photos at weddings/{slug}/{uuid}.ext
+
+Generates public URL and inserts row into photos
+
+Automatically computes next order index
+
+
+
+
+2. Drag-and-Drop Sorting
+
+Powered by @dnd-kit in the admin UI
+
+Supports reordering for:
+
+Events
+
+Party members
+
+Photos
+
+
+Writes new order back to Supabase, updating the order column
+
+
+
+3. RSVP Analytics Dashboard
+
+Admin page at e.g. /admin/rsvps
+
+Backend calls Netlify API:
+
+Resolves form ID for rsvp
+
+Fetches submissions
+
+Computes stats: total, yes, no, meal counts
+
+
+UI shows:
+
+KPI cards (Total / Yes / No)
+
+Meal counts list
+
+Data table of latest RSVPs
+
+
+
+
+4. GitHub Actions CI/CD
+
+Optional but recommended
+
+Public site:
+
+On push to main, run tests/build
+
+Deploy via netlify deploy --dir=dist --prod
+
+
+Admin site:
+
+On push to main, run tests/build
+
+Deploy via netlify deploy --prod --build
+
+
+Uses GitHub Secrets:
+
+NETLIFY_AUTH_TOKEN
+
+NETLIFY_SITE_ID
+
+
+
+
+5. Local Supabase Docker Environment
+
+Powered by Supabase CLI (supabase start)
+
+Local containers:
+
+Postgres, Studio, etc.
+
+
+Schema and seed loaded via:
+
+supabase db execute --file supabase/schema.sql
+
+supabase db execute --file supabase/seed.sql
+
+
+Admin app .env.local points to local URL and keys for offline dev
+
+
+
+
+
+---
+
+🧩 Repositories & Structure
+
+Depending on your setup, you likely have:
+
+MY-JAEBELLE-WEDDING/ – public Vite wedding site
+
+jaebelle-admin/ – Next.js Admin panel
+
+
+Public Site (Vite)
+
+Key files:
+
+index.html – root HTML, Tailwind CDN, fonts
+
+src/index.tsx – React entry
+
+src/App.tsx – main layout
+
+src/constants.ts – wedding data (if not fully dynamic)
+
+src/types.ts – shared interfaces
+
+src/components/*.tsx – Hero, AboutSection, RsvpSection, WeddingParty, Schedule, Gallery, Registry, Footer
+
+public/rsvp-thank-you.html – RSVP success page
+
+netlify.toml – Netlify build + SPA + Forms configuration
+
+
+Admin Panel (Next.js)
+
+Key files:
+
+app/api/auth/[...nextauth]/route.ts – magic link auth
+
+app/admin/page.tsx – main admin dashboard
+
+app/admin/signin/page.tsx – login page
+
+app/admin/rsvps/page.tsx – RSVP analytics dashboard
+
+app/api/admin/wedding/route.ts – update wedding details
+
+app/api/admin/events/route.ts – CRUD events
+
+app/api/admin/party/route.ts – CRUD party members
+
+app/api/admin/registry/route.ts – CRUD registry links
+
+app/api/admin/photos/route.ts – CRUD photos
+
+app/api/admin/photos/upload/route.ts – photo upload → Supabase Storage
+
+app/api/admin/rsvps/route.ts – RSVP analytics via Netlify Forms API
+
+app/admin/ui/AdminClient.tsx – main admin UI (tabs, forms, DnD)
+
+app/admin/ui/SortableList.tsx – drag-and-drop helper
+
+lib/supabaseServer.ts – Supabase admin (Service Role) client
+
+supabase/schema.sql – DB schema
+
+supabase/seed.sql – seed data for Morgan & Shawn
+
+
+
+---
+
+🔑 Environment Variables
+
+Public Site (Netlify)
+
+Typical env vars:
+
+VITE_SUPABASE_URL=...         # optional if public site reads from Supabase
+VITE_SUPABASE_ANON_KEY=...
+
+(If the public site is fully static, these can be omitted.)
+
+Admin Panel (Netlify)
+
+NEXTAUTH_URL=https://admin.shawn-morgan-wedding.netlify.app
+NEXTAUTH_SECRET=your_strong_secret
+
+RESEND_API_KEY=key_xxx
+EMAIL_FROM=noreply@jaebelle.com
+
+SUPABASE_URL=https://YOURPROJECT.supabase.co
+SUPABASE_ANON_KEY=ey...
+SUPABASE_SERVICE_ROLE_KEY=ey...   # server-only
+
+NETLIFY_ACCESS_TOKEN=your_netlify_api_token          # for RSVP analytics
+NETLIFY_SITE_ID=public_site_id_for_shawn-morgan-wedding
+NETLIFY_RSVP_FORM_NAME=rsvp
+
+For local dev, you can set these in .env.local with local Supabase URLs.
+
+
+---
+
+🧪 Development
+
+Public (Vite)
+
+npm install
+npm run dev
+npm run build
+
+Admin (Next.js)
+
+npm install
+npm run dev
+npm run build
+
+
+---
+
+🌐 Deployment
+
+Public Site
+
+Hosted on Netlify:
+
+Build command: npm run build
+
+Publish directory: dist
+
+
+netlify.toml SPA redirect:
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+
+Admin Panel
+
+Hosted on Netlify as a separate site:
+
+Build command: npm run build
+
+Publish directory: .next
+
+
+Netlify automatically recognizes Next.js and configures functions.
+
+
+
+---
+
+🗺 Roadmap
+
+Hotel & travel section for guests
+
+“Things to do in Atlanta” section
+
+Guestbook (live guest notes)
+
+Export RSVPs as CSV (Netlify Forms or Supabase)
+
+Mobile-optimized admin view (PWA-style)
+
+
+
+---
+
+❤️ Credits
+
+Couple:
+
+Morgan JEA (Echols)
+
+Shawn Keller
+
+
+Wedding Date: November 14, 2026
+Location: Atlanta, GA
+
+Development:
+
+The SeaTrace Programming Team(s)
+
+Netlify, Supabase, and this AI-assisted build pipeline
+
+
+---
+
+## ✅ Step-by-Step Migration & Deployment Checklist (for your programming team)
+
+This is the **playbook** to go from where you are to the full “Pro” setup, in the smoothest order:
+
+---
+
+### Phase 0 – Baseline: Confirm Existing Setup
+
+1. **Public site**  
+   - Confirm `npm run build` passes locally.  
+   - Confirm Netlify site `shawn-morgan-wedding.netlify.app` builds & deploys successfully.  
+   - Confirm RSVP form appears under **Netlify → Forms** as `rsvp`.  
+
+2. **Admin site (if already scaffolded)**  
+   - Confirm Next.js app runs locally (`npm run dev`).  
+   - Confirm magic link login via NextAuth + Resend works in dev or staging.  
+   - Confirm Supabase `schema.sql` and `seed.sql` have been applied to your hosted Supabase project.
+
+Only when these are stable, move on.
+
+---
+
+### Phase 1 – Supabase Storage Photo Upload Flow
+
+**Goal:** Let Admin upload photos into Supabase Storage and auto-create `photos` records.
+
+1. **Create storage bucket** in Supabase:
+   - Name: `wedding-photos`
+   - Public: enabled (for now).
+
+2. **Add API route** in the Admin app:
+   - `app/api/admin/photos/upload/route.ts`  
+   - Use the code we discussed:
+     - Accept multipart `file`, `weddingSlug`, `alt`
+     - Upload to `wedding-photos`
+     - Compute public URL
+     - Insert into `photos` with incremented `order`
+     - Return newly created `photo`
+
+3. **Add upload UI** to Photos tab:
+   - In `AdminClient.tsx`, Photos section:
+     - Add `<form encType="multipart/form-data">` with:
+       - File input
+       - Alt text input
+       - Hidden `weddingSlug`
+     - On submit:
+       - POST to `/api/admin/photos/upload`
+       - On success, `photosArray.append(json.photo)` and reset the form.
+
+4. **Test locally**:
+   - `npm run dev` (admin)
+   - Upload a few photos
+   - Confirm they appear:
+     - In Supabase Storage
+     - In `photos` table
+     - In Admin UI
+
+5. **Redeploy admin** to Netlify when stable.
+
+---
+
+### Phase 2 – Drag-and-Drop Sorting (DnD)
+
+**Goal:** Let Admin drag to reorder Events, Party, and Photos; save new order to DB.
+
+1. **Install `@dnd-kit` in Admin app**:
+   ```bash
+   npm i @dnd-kit/core @dnd-kit/sortable @dnd-kit/modifiers
+
+2. Create SortableList.tsx:
+
+app/admin/ui/SortableList.tsx
+
+Add SortableList and SortableItem component as provided.
+
+
+
+3. Wire DnD in Photos tab:
+
+Wrap the .map of photosArray.fields in <SortableList>.
+
+On onReorder(ids):
+
+Compute new order of photos
+
+Update photosForm values and order indexes.
+
+
+Reuse your existing “Save Photos” to persist the new order.
+
+
+
+4. Repeat for Events and Party (if desired):
+
+Events:
+
+Use eventsArray.fields and update order.
+
+
+Party:
+
+Use partyArray.fields and update order.
+
+
+
+
+5. Test locally:
+
+Drag items in each tab.
+
+Click “Save”.
+
+Verify order column in Supabase tables changes and public site reflects the new order.
+
+
+
+6. Redeploy admin to Netlify when DnD is working smoothly.
+
+
+
+
+---
+
+Phase 3 – RSVP Analytics Dashboard
+
+Goal: Give Admin a live view of RSVPs pulled from Netlify Forms.
+
+1. Create Netlify API token & capture site ID:
+
+Go to Netlify → User Settings → Access tokens → New token.
+
+Note: NETLIFY_ACCESS_TOKEN.
+
+Find your public site ID from the site settings (for shawn-morgan-wedding.netlify.app).
+
+
+
+2. Add env vars to Admin site (in Netlify Admin site settings):
+
+NETLIFY_ACCESS_TOKEN=your_token
+NETLIFY_SITE_ID=public_site_id
+NETLIFY_RSVP_FORM_NAME=rsvp
+
+
+3. Create API route app/api/admin/rsvps/route.ts:
+
+Uses Netlify API to:
+
+List forms for the site
+
+Find the one named rsvp
+
+List submissions for that form
+
+Compute:
+
+Total
+
+Yes / No
+
+Meal breakdown
+
+
+Return { stats, submissions }.
+
+
+
+
+4. Create admin page app/admin/rsvps/page.tsx:
+
+Use useSWR or fetch client-side:
+
+Call /api/admin/rsvps
+
+Render:
+
+KPI tiles (Total / Yes / No)
+
+Meal stats
+
+Table of submissions (name, attending, meal, notes)
+
+
+
+
+
+5. Add link in Admin navigation:
+
+Header nav: link to /admin/rsvps.
+
+
+
+6. Test locally:
+
+Set env vars in .env.local with your Netlify token & site ID.
+
+Run admin: npm run dev.
+
+Visit /admin/rsvps.
+
+Confirm counts match Netlify Forms dashboard.
+
+
+
+7. Redeploy admin to Netlify with env vars set in the UI.
+
+
+
+
+---
+
+Phase 4 – GitHub Actions CI/CD
+
+Goal: Automate build & deploy for both public and admin codebases.
+
+> If you prefer Netlify’s built-in Git integration only, this phase is optional. CI here focuses on adding tests and explicit deploys via Actions.
+
+
+
+For the Public Site Repo (MY-JAEBELLE-WEDDING)
+
+1. Add Secrets in GitHub:
+
+NETLIFY_AUTH_TOKEN
+
+NETLIFY_SITE_ID (for the public site)
+
+
+
+2. Create workflow file: .github/workflows/deploy-public.yml
+
+Use the YAML from the README (build Vite → netlify deploy --dir=dist --prod).
+
+
+3. Push to main:
+
+Confirm Actions runs successfully.
+
+Confirm site updates on shawn-morgan-wedding.netlify.app.
+
+
+
+
+For the Admin Repo
+
+1. Add Secrets in GitHub:
+
+NETLIFY_AUTH_TOKEN
+
+NETLIFY_SITE_ID (for admin site)
+
+
+
+2. Create workflow file: .github/workflows/deploy-admin.yml
+
+Use the YAML from the README (build Next.js → netlify deploy --prod --build).
+
+
+3. Push to main:
+
+Confirm Actions run, builds, deploy, and functions all work.
+
+
+
+
+
+---
+
+Phase 5 – Local Supabase Docker Environment
+
+Goal: Give your devs a full local stack for offline work.
+
+1. Install Supabase CLI:
+
+npm install -g supabase
+# or: brew install supabase/tap/supabase
+
+
+2. Initialize Supabase in Admin repo:
+
+supabase init
+
+This creates a supabase/ config folder (you already have schema.sql and seed.sql alongside it).
+
+
+3. Start local stack:
+
+supabase start
+
+Note: CLI prints local SUPABASE_URL, anon, service_role values.
+
+
+4. Load schema & seed into local DB:
+
+supabase db execute --file supabase/schema.sql
+supabase db execute --file supabase/seed.sql
+
+
+5. Point Admin app to local Supabase:
+
+Create .env.local in admin:
+
+SUPABASE_URL=http://localhost:54321
+SUPABASE_ANON_KEY=local_anon_key
+SUPABASE_SERVICE_ROLE_KEY=local_service_role_key
+NEXTAUTH_URL=http://localhost:3000
+
+Run:
+
+npm run dev
+
+Confirm Admin panel reads/writes local DB.
+
+
+
+6. Switch back to production Supabase for Netlify:
+
+Keep local env only in .env.local (not in Netlify).
+
+Netlify uses the hosted Supabase env vars you already configured.
+
+
+
+EDIT THIS:
+
+
 # MY-JAEBELLE-WEDDING
 WEDDING RSVP APP Production-grade README.md tailored exact setup (Vite public site + Next.js Admin + Supabase + Netlify), and the full architecture built together.
 
@@ -29,7 +889,7 @@ Wedding details & story
 
 Ceremony & reception schedule
 
-Wedding party
+Wedding partyV .  ..  lnjggd. m. ?;  ?nm just in. m. m. even fx s jgrjx. Egnz,v v 
 
 Registry links
 
@@ -344,7 +1204,7 @@ Pre-signed upload URLs
 Drag-and-drop reordering
 
 
-I can generate the full upload flow when you're ready.
+Generate the full upload production flow to make ready.
 
 
 ---
@@ -383,18 +1243,15 @@ and this AI-powered build assistant.
 
 ---
 
-Love this. Let’s bolt on the “pro” features to your already-beautiful wedding stack. I’ll keep everything copy-pasteable for your dev.
+Bolting on the “pro” features to my Jaebelle.wedding already-beautiful that includes Dev_stack.
 
-I’ll assume:
+Here is what to build:
 
 Public site: Vite + React (Netlify, Netlify Forms for RSVP)
 
 Admin site: Next.js App Router + Supabase + NextAuth (magic link)
 
 Supabase: already has weddings, events, party_members, registry_links, photos, guests, rsvps per our schema
-
-
-I’ll break it into the 5 things you asked for.
 
 
 ---
